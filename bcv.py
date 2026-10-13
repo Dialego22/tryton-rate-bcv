@@ -1,4 +1,5 @@
-from trytond.pool import PoolMeta
+from trytond.pool import Pool, PoolMeta
+from datetime import datetime, date
 import requests
 
 class CurrencyBcvUpdate(metaclass=PoolMeta):
@@ -30,4 +31,16 @@ class CurrencyBcvUpdate(metaclass=PoolMeta):
     def _update_rates_bcv(cls, record):
         response = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=20) # api endpoint for BCV rates, solo para el dolar oficial
         if response.status_code == 200:
-            print("BCV API response:", response.json())
+            data = response.json()
+
+            Rate = Pool().get('currency.currency.rate')
+
+            for currency in record.currencies:
+                if currency.code == data['moneda']:
+                    at_currency = datetime.fromisoformat(data['fechaActualizacion']).date()
+                    Rate.create([{
+                        'currency': currency.id,
+                        'rate': data['promedio'],
+                        'date': at_currency,
+                    }])
+            
