@@ -3,6 +3,7 @@ from . import bcv
 
 def register():
     Pool.register(
-        bcv.BCV,
-        module='rate_bcv', type_='model'
+        bcv.CurrencyBcvUpdate,
+        module='rate_bcv', 
+        type_='model'
     )
