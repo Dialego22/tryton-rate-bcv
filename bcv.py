@@ -12,35 +12,18 @@ class CurrencyBcvUpdate(metaclass=PoolMeta):
         if new_source not in cls.source.selection:
             cls.source.selection = list(cls.source.selection) + [new_source]
 
-    @classmethod
-    def update_rates(cls, records=None):
-        if records is None:
-            records = cls.search([])
-
-        bcv_records = [u for u in records if u.source == 'bcv']
-        other_records = [u for u in records if u.source != 'bcv']
-
-        if other_records:
-            super().update_rates(records=other_records)
-
-        if records:
-            for record in bcv_records:
-                cls._update_rates_bcv(record)
-
-    @classmethod
-    def _update_rates_bcv(cls, record):
+    def fetch_bcv(self, date_):
         response = requests.get("https://ve.dolarapi.com/v1/dolares/oficial", timeout=20) # api endpoint for BCV rates, solo para el dolar oficial
         if response.status_code == 200:
             data = response.json()
 
             Rate = Pool().get('currency.currency.rate')
 
-            for currency in record.currencies:
-                if currency.code == data['moneda']:
-                    at_currency = datetime.fromisoformat(data['fechaActualizacion']).date()
-                    Rate.create([{
-                        'currency': currency.id,
-                        'rate': data['promedio'],
-                        'date': at_currency,
-                    }])
+            for currency in self.currencies:
+                at_currency = datetime.fromisoformat(data['fechaActualizacion']).date()
+                Rate.create([{
+                    'currency': currency.id,
+                    'rate': round(float(data['promedio']), 5),
+                    'date': at_currency,
+                }])
             
